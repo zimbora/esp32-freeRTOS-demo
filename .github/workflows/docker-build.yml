@@ -1,0 +1,85 @@
+name: test app freeRTOS Build
+
+on:
+  release:
+    types: [created]
+  push:
+    branches:
+      - main
+      
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Get the version
+      id: release
+      run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
+
+    - name: Check release tag format
+      run: |
+        echo "version=" >> $GITHUB_ENV
+        TAG=${{ steps.release.outputs.tag }}
+        if [[ $TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "The release tag is in the format *.*.*: $TAG"
+          echo "version=$TAG" >> $GITHUB_ENV
+        fi
+          
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Set an environment variable
+      run: |
+        echo "container=deploy-freertos" >> $GITHUB_ENV
+        echo "tag=freertos" >> $GITHUB_ENV
+        echo "project=esp32-freeRTOS2" >> $GITHUB_ENV
+        echo "branch=main" >> $GITHUB_ENV
+        echo "app=test" >> $GITHUB_ENV
+        echo "macro=APP_TEST" >> $GITHUB_ENV
+
+    - name: Checkout esp32-freeRTOS2 repository
+      run: |
+        wget -q https://github.com/zimbora/${project}/archive/refs/heads/${branch}.zip
+        unzip ${branch}.zip
+        rm ${branch}.zip
+        mv ${project}-${branch} ${project}
+        mkdir -p ${project}/src/app/${app}
+        cp *.cpp *.c *.h *.hpp deploy.sh ${project}/src/app/${app}
+        
+    - name: Build Docker image
+      run: |
+        cd $project
+        docker build \
+        --build-arg PROJECT=$project \
+        --build-arg APP=$app \
+        --build-arg MACRO=$macro \
+        --build-arg APP_VERSION=$app_version \
+        -t ${tag} .
+
+    - name: Run script inside Docker container
+      run: |
+        docker create --name ${container} ${tag}
+        docker cp ${container}:${project}/images/${app} ./images/
+        docker rm $container
+        
+    - name: Commit and push if changed
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        if [[ $GITHUB_REF == refs/heads/main ]]; then
+          git add -A images/
+          git diff-index --quiet HEAD || git commit -m "automated release" && git push
+        fi
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: upload images
+        path: ./esp32-freeRTOS2/images
+        
+    - name: Update Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          esp32-freeRTOS2/images/*/*
+        token: ${{ secrets.GITHUB_TOKEN }}
