@@ -38,6 +38,8 @@ jobs:
         rm ${branch}.zip
         mv ${project}-${branch} ${project}
         mkdir -p ${project}/src/app/${app}
+        cd ${project}
+        ls
         cp *.cpp *.h deploy.sh ${project}/src/app/${app}
         
     - name: Build Docker image
