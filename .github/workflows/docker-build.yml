@@ -39,9 +39,7 @@ jobs:
         mv ${project}-${branch} ${project}
         mkdir -p ${project}/src/app/${app}
         ls
-        cd ${app}
-        ls
-        cp *.cpp *.h deploy.sh ../${project}/src/app/${app}
+        cp *.cpp *.h deploy.sh ${project}/src/app/${app}/
         
     - name: Build Docker image
       run: |
