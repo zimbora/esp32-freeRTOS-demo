@@ -15,16 +15,9 @@ jobs:
 
     - name: Get the version
       id: release
-      run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
-
-    - name: Check release tag format
       run: |
-        echo "version=" >> $GITHUB_ENV
-        TAG=${{ steps.release.outputs.tag }}
-        if [[ $TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          echo "The release tag is in the format *.*.*: $TAG"
-          echo "version=$TAG" >> $GITHUB_ENV
-        fi
+        echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
+        echo "Branch name is: ${{ github.ref }}"
           
     - name: Checkout repository
       uses: actions/checkout@v3
