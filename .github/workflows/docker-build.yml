@@ -56,24 +56,9 @@ jobs:
         docker create --name ${container} ${tag}
         docker cp ${container}:${project}/images/${app} ./images/
         docker rm $container
-        
-    - name: Commit and push if changed
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        if [[ $GITHUB_REF == refs/heads/main ]]; then
-          git add -A images/
-          git diff-index --quiet HEAD || git commit -m "automated release" && git push
-        fi
 
     - uses: actions/upload-artifact@v3
       with:
         name: upload images
         path: ./esp32-freeRTOS2/images
-        
-    - name: Update Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          esp32-freeRTOS2/images/*/*
-        token: ${{ secrets.GITHUB_TOKEN }}
+
